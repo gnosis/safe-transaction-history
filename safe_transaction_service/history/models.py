@@ -248,6 +248,7 @@ class EthereumEventQuerySet(models.QuerySet):
                                          address=address).filter(arguments__has_key='value')
 
     def erc721_events(self, token_address: Optional[str] = None, address: Optional[str] = None):
+        # TODO Sql with tokens registered as NFT
         return self.erc20_and_721_events(token_address=token_address,
                                          address=address).filter(arguments__has_key='tokenId')
 

@@ -39,7 +39,7 @@ class IndexServiceProvider:
 
     @classmethod
     def del_singleton(cls):
-        if hasattr(cls, "instance"):
+        if hasattr(cls, 'instance'):
             del cls.instance
 
 
