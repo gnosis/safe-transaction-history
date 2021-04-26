@@ -1,25 +1,19 @@
-import operator
-from collections import OrderedDict
 from functools import cached_property
 from logging import getLogger
-from typing import Any, Dict, Iterable, List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence
 
-from cache_memoize import cache_memoize
-from cachetools import cachedmethod
 from django.db import transaction
-from eth_abi.exceptions import DecodingError
+
 from eth_utils import event_abi_to_log_topic
-from gnosis.eth.constants import NULL_ADDRESS
-from requests import RequestException
 from web3.contract import ContractEvent
-from web3.exceptions import BadFunctionCallOutput
 from web3.types import EventData, FilterParams, LogReceipt
 
 from gnosis.eth import EthereumClient
+from gnosis.eth.constants import NULL_ADDRESS
 from gnosis.eth.contracts import get_safe_V1_3_0_contract
 
-from ..models import EthereumEvent, SafeContract, InternalTx, InternalTxType, EthereumTxCallType, InternalTxDecoded, \
-    SafeL2MasterCopy
+from ..models import (EthereumTxCallType, InternalTx, InternalTxDecoded,
+                      InternalTxType, SafeL2MasterCopy)
 from .ethereum_indexer import EthereumIndexer
 
 logger = getLogger(__name__)
