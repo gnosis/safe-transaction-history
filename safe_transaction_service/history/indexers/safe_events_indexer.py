@@ -100,6 +100,12 @@ class SafeEventsIndexer(EthereumIndexer):
 
         event SafeReceived(address indexed sender, uint256 value);  // Incoming ether
 
+        event ChangedFallbackHandler(address handler);
+        event ChangedGuard(address guard);
+
+        # ProxyFactory
+        event ProxyCreation(GnosisSafeProxy proxy, address singleton);
+
         :return:
         """
         safe_contract = get_safe_V1_3_0_contract(self.ethereum_client.w3)
@@ -239,6 +245,10 @@ class SafeEventsIndexer(EthereumIndexer):
         elif event_name == 'ChangedThreshold':
             internal_tx_decoded.function_name = 'changeThreshold'
             args['_threshold'] = args.pop('threshold')
+        elif event_name == 'ChangedFallbackHandler':
+            internal_tx_decoded.function_name = 'setFallbackHandler'
+        elif event_name == 'ChangedGuard':
+            internal_tx_decoded.function_name = 'setGuard'
         elif event_name == 'SafeReceived':  # Received ether
             internal_tx.call_type = EthereumTxCallType.CALL.value
             internal_tx._from = args['sender']
