@@ -955,18 +955,18 @@ class ProxyFactory(MonitoredAddress):
         ordering = ['tx_block_number']
 
 
-class SafeL2MasterCopy(MonitoredAddress):
-    class Meta:
-        verbose_name_plural = 'Safe L2 master copies'
-        ordering = ['tx_block_number']
-
-
 class SafeMasterCopy(MonitoredAddress):
     version = models.CharField(max_length=20)
     deployer = models.CharField(max_length=50, default='Gnosis')
 
     class Meta:
         verbose_name_plural = 'Safe master copies'
+        ordering = ['tx_block_number']
+
+
+class SafeL2MasterCopy(SafeMasterCopy):
+    class Meta:
+        verbose_name_plural = 'Safe L2 master copies'
         ordering = ['tx_block_number']
 
 

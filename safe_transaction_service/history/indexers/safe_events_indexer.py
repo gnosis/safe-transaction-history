@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, Sequence
 from django.db import transaction
 
 from eth_utils import event_abi_to_log_topic
+from hexbytes import HexBytes
 from web3.contract import ContractEvent
 from web3.types import EventData, FilterParams, LogReceipt
 
@@ -34,8 +35,12 @@ class SafeEventsIndexerProvider:
 
 class SafeEventsIndexer(EthereumIndexer):
     """
-    Indexes ERC20 and ERC721 `Transfer` Event (as ERC721 has the same topic)
+    Indexes Gnosis Safe L2 events
     """
+
+    def __init__(self, *args, **kwargs):
+        kwargs['first_block_threshold'] = 0
+        super().__init__(*args, **kwargs)
 
     @cached_property
     def events_to_listen(self) -> Dict[bytes, ContractEvent]:
@@ -128,8 +133,12 @@ class SafeEventsIndexer(EthereumIndexer):
             safe_contract.events.ChangedThreshold(),
             # Incoming Ether
             safe_contract.events.SafeReceived(),
+            # Changed FallbackHandler
+            safe_contract.events.ChangedFallbackHandler(),
+            # Changed Guard
+            safe_contract.events.ChangedGuard(),
         ]
-        return {event_abi_to_log_topic(event.abi): event for event in events}
+        return {HexBytes(event_abi_to_log_topic(event.abi)).hex(): event for event in events}
 
     @property
     def database_model(self):
@@ -184,7 +193,7 @@ class SafeEventsIndexer(EthereumIndexer):
         event_name = decoded_element['event']
         # As log
         log_index = decoded_element['logIndex']
-        args = decoded_element['args']
+        args = dict(decoded_element['args'])
 
         internal_tx = InternalTx(
             ethereum_tx_id=decoded_element['transactionHash'],
@@ -193,7 +202,7 @@ class SafeEventsIndexer(EthereumIndexer):
             data=b'',
             to=NULL_ADDRESS,  # It should be Master copy address but we cannot detect it
             value=0,
-            gas_used=1,
+            gas_used=50000,
             contract_address=None,
             code=None,
             output=None,
@@ -214,6 +223,7 @@ class SafeEventsIndexer(EthereumIndexer):
             internal_tx_decoded.function_name = 'execTransactionFromModule'
         elif event_name == 'SafeSetup':
             internal_tx_decoded.function_name = 'setup'
+            args['_from'] = safe_address  # TODO ProxyFactory
             args['to'] = NULL_ADDRESS
             args['payment'] = 0
             args['paymentReceiver'] = NULL_ADDRESS
@@ -268,7 +278,7 @@ class SafeEventsIndexer(EthereumIndexer):
         :param log_receipts: Events to store in database
         :return: List of `EthereumEvent` already stored in database
         """
-        decoded_elements: List[EventData] = [self.events_to_listen[log_receipt['topic']].processLog(log_receipt)
+        decoded_elements: List[EventData] = [self.events_to_listen[log_receipt['topics'][0].hex()].processLog(log_receipt)
                                              for log_receipt in log_receipts]
         tx_hashes = [log_receipt['transactionHash'] for log_receipt in log_receipts]
         logger.debug('Prefetching and storing %d ethereum txs', len(tx_hashes))
