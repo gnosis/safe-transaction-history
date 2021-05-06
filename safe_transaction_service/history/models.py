@@ -1024,9 +1024,9 @@ class SafeStatusManager(models.Manager):
 class SafeStatusQuerySet(models.QuerySet):
     def sorted_by_internal_tx(self):
         """
-        Last SafeStatus first. Usually ordering by `nonce` it should be enough, but in some cases (MultiSend)
-        there could be multiple transactions with the same nonce. `address` must be part of the expression to use
-        `distinct()` later
+        Last SafeStatus first. Usually ordering by `nonce` it should be enough, but in some cases
+        (MultiSend, calling functions inside the Safe like adding/removing owners...) there could be multiple
+        transactions with the same nonce. `address` must be part of the expression to use `distinct()` later
         :return: SafeStatus QuerySet sorted
         """
         return self.order_by(

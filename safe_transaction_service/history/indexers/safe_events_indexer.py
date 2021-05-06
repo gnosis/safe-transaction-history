@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Sequence
 
 from django.db import transaction
 
+from eth_abi import decode_abi
 from eth_utils import event_abi_to_log_topic
 from hexbytes import HexBytes
 from web3.contract import ContractEvent
@@ -219,8 +220,15 @@ class SafeEventsIndexer(EthereumIndexer):
         )
         if event_name == 'SafeMultiSigTransaction':
             internal_tx_decoded.function_name = 'execTransaction'
+            args['data'] = HexBytes(args['data']).hex()
+            args['signatures'] = HexBytes(args['signatures']).hex()
+            args['nonce'], args['sender'], args['threshold'] = decode_abi(
+                ['uint256', 'address', 'uint256'],
+                internal_tx_decoded.arguments.pop('additionalInfo')
+            )
         elif event_name == 'SafeModuleTransaction':
             internal_tx_decoded.function_name = 'execTransactionFromModule'
+            args['data'] = HexBytes(args['data']).hex()
         elif event_name == 'SafeSetup':
             internal_tx_decoded.function_name = 'setup'
             args['_from'] = safe_address  # TODO ProxyFactory
@@ -268,7 +276,9 @@ class SafeEventsIndexer(EthereumIndexer):
 
         with transaction.atomic():
             internal_tx.save()
+            print('Processed event', event_name, 'log index', log_index)
             if internal_tx_decoded:
+                print(internal_tx_decoded.function_name, internal_tx_decoded.arguments)
                 internal_tx_decoded.save()
         return internal_tx
 
